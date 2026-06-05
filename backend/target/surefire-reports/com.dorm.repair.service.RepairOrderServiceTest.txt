@@ -1,0 +1,121 @@
+-------------------------------------------------------------------------------
+Test set: com.dorm.repair.service.RepairOrderServiceTest
+-------------------------------------------------------------------------------
+Tests run: 13, Failures: 0, Errors: 13, Skipped: 0, Time elapsed: 0.001 s <<< FAILURE! - in com.dorm.repair.service.RepairOrderServiceTest
+testFindByStatus  Time elapsed: 0 s  <<< ERROR!
+java.lang.Error: 
+Unresolved compilation problems: 
+	Cannot invoke equals(Long) on the primitive type long
+	Cannot invoke equals(Long) on the primitive type long
+	Cannot invoke equals(Long) on the primitive type long
+
+	at com.dorm.repair.service.RepairOrderServiceTest.<init>(RepairOrderServiceTest.java:171)
+
+testConfirmOrder  Time elapsed: 0 s  <<< ERROR!
+java.lang.Error: 
+Unresolved compilation problems: 
+	Cannot invoke equals(Long) on the primitive type long
+	Cannot invoke equals(Long) on the primitive type long
+	Cannot invoke equals(Long) on the primitive type long
+
+	at com.dorm.repair.service.RepairOrderServiceTest.<init>(RepairOrderServiceTest.java:171)
+
+testCreateOrder  Time elapsed: 0 s  <<< ERROR!
+java.lang.Error: 
+Unresolved compilation problems: 
+	Cannot invoke equals(Long) on the primitive type long
+	Cannot invoke equals(Long) on the primitive type long
+	Cannot invoke equals(Long) on the primitive type long
+
+	at com.dorm.repair.service.RepairOrderServiceTest.<init>(RepairOrderServiceTest.java:171)
+
+testFindByStudentId  Time elapsed: 0.001 s  <<< ERROR!
+java.lang.Error: 
+Unresolved compilation problems: 
+	Cannot invoke equals(Long) on the primitive type long
+	Cannot invoke equals(Long) on the primitive type long
+	Cannot invoke equals(Long) on the primitive type long
+
+	at com.dorm.repair.service.RepairOrderServiceTest.<init>(RepairOrderServiceTest.java:171)
+
+testAssignOrderNotFound  Time elapsed: 0 s  <<< ERROR!
+java.lang.Error: 
+Unresolved compilation problems: 
+	Cannot invoke equals(Long) on the primitive type long
+	Cannot invoke equals(Long) on the primitive type long
+	Cannot invoke equals(Long) on the primitive type long
+
+	at com.dorm.repair.service.RepairOrderServiceTest.<init>(RepairOrderServiceTest.java:171)
+
+testFindPendingTreat  Time elapsed: 0 s  <<< ERROR!
+java.lang.Error: 
+Unresolved compilation problems: 
+	Cannot invoke equals(Long) on the primitive type long
+	Cannot invoke equals(Long) on the primitive type long
+	Cannot invoke equals(Long) on the primitive type long
+
+	at com.dorm.repair.service.RepairOrderServiceTest.<init>(RepairOrderServiceTest.java:171)
+
+testFindByRepairmanId  Time elapsed: 0 s  <<< ERROR!
+java.lang.Error: 
+Unresolved compilation problems: 
+	Cannot invoke equals(Long) on the primitive type long
+	Cannot invoke equals(Long) on the primitive type long
+	Cannot invoke equals(Long) on the primitive type long
+
+	at com.dorm.repair.service.RepairOrderServiceTest.<init>(RepairOrderServiceTest.java:171)
+
+testCompleteRepair  Time elapsed: 0 s  <<< ERROR!
+java.lang.Error: 
+Unresolved compilation problems: 
+	Cannot invoke equals(Long) on the primitive type long
+	Cannot invoke equals(Long) on the primitive type long
+	Cannot invoke equals(Long) on the primitive type long
+
+	at com.dorm.repair.service.RepairOrderServiceTest.<init>(RepairOrderServiceTest.java:171)
+
+testFindPendingAssign  Time elapsed: 0 s  <<< ERROR!
+java.lang.Error: 
+Unresolved compilation problems: 
+	Cannot invoke equals(Long) on the primitive type long
+	Cannot invoke equals(Long) on the primitive type long
+	Cannot invoke equals(Long) on the primitive type long
+
+	at com.dorm.repair.service.RepairOrderServiceTest.<init>(RepairOrderServiceTest.java:171)
+
+testAssignOrder  Time elapsed: 0 s  <<< ERROR!
+java.lang.Error: 
+Unresolved compilation problems: 
+	Cannot invoke equals(Long) on the primitive type long
+	Cannot invoke equals(Long) on the primitive type long
+	Cannot invoke equals(Long) on the primitive type long
+
+	at com.dorm.repair.service.RepairOrderServiceTest.<init>(RepairOrderServiceTest.java:171)
+
+testStartRepair  Time elapsed: 0 s  <<< ERROR!
+java.lang.Error: 
+Unresolved compilation problems: 
+	Cannot invoke equals(Long) on the primitive type long
+	Cannot invoke equals(Long) on the primitive type long
+	Cannot invoke equals(Long) on the primitive type long
+
+	at com.dorm.repair.service.RepairOrderServiceTest.<init>(RepairOrderServiceTest.java:171)
+
+testCreateOrderStudentNotFound  Time elapsed: 0 s  <<< ERROR!
+java.lang.Error: 
+Unresolved compilation problems: 
+	Cannot invoke equals(Long) on the primitive type long
+	Cannot invoke equals(Long) on the primitive type long
+	Cannot invoke equals(Long) on the primitive type long
+
+	at com.dorm.repair.service.RepairOrderServiceTest.<init>(RepairOrderServiceTest.java:171)
+
+testCancelOrder  Time elapsed: 0 s  <<< ERROR!
+java.lang.Error: 
+Unresolved compilation problems: 
+	Cannot invoke equals(Long) on the primitive type long
+	Cannot invoke equals(Long) on the primitive type long
+	Cannot invoke equals(Long) on the primitive type long
+
+	at com.dorm.repair.service.RepairOrderServiceTest.<init>(RepairOrderServiceTest.java:171)
+

@@ -1,0 +1,76 @@
+-------------------------------------------------------------------------------
+Test set: com.dorm.repair.service.EvaluationServiceTest
+-------------------------------------------------------------------------------
+Tests run: 6, Failures: 0, Errors: 6, Skipped: 0, Time elapsed: 0.002 s <<< FAILURE! - in com.dorm.repair.service.EvaluationServiceTest
+testCreateEvaluationOrderNotCompleted  Time elapsed: 0 s  <<< ERROR!
+java.lang.Error: 
+Unresolved compilation problems: 
+	The method createEvaluation(Long, EvaluationDTO) in the type EvaluationService is not applicable for the arguments (EvaluationDTO)
+	The method createEvaluation(Long, EvaluationDTO) in the type EvaluationService is not applicable for the arguments (EvaluationDTO)
+	The method createEvaluation(Long, EvaluationDTO) in the type EvaluationService is not applicable for the arguments (EvaluationDTO)
+	The method createEvaluation(Long, EvaluationDTO) in the type EvaluationService is not applicable for the arguments (EvaluationDTO)
+	The method createEvaluation(Long, EvaluationDTO) in the type EvaluationService is not applicable for the arguments (EvaluationDTO)
+	The method createEvaluation(Long, EvaluationDTO) in the type EvaluationService is not applicable for the arguments (EvaluationDTO)
+
+	at com.dorm.repair.service.EvaluationServiceTest.<init>(EvaluationServiceTest.java:49)
+
+testCreateEvaluationAlreadyExists  Time elapsed: 0 s  <<< ERROR!
+java.lang.Error: 
+Unresolved compilation problems: 
+	The method createEvaluation(Long, EvaluationDTO) in the type EvaluationService is not applicable for the arguments (EvaluationDTO)
+	The method createEvaluation(Long, EvaluationDTO) in the type EvaluationService is not applicable for the arguments (EvaluationDTO)
+	The method createEvaluation(Long, EvaluationDTO) in the type EvaluationService is not applicable for the arguments (EvaluationDTO)
+	The method createEvaluation(Long, EvaluationDTO) in the type EvaluationService is not applicable for the arguments (EvaluationDTO)
+	The method createEvaluation(Long, EvaluationDTO) in the type EvaluationService is not applicable for the arguments (EvaluationDTO)
+	The method createEvaluation(Long, EvaluationDTO) in the type EvaluationService is not applicable for the arguments (EvaluationDTO)
+
+	at com.dorm.repair.service.EvaluationServiceTest.<init>(EvaluationServiceTest.java:49)
+
+testCreateEvaluationOrderNotFound  Time elapsed: 0 s  <<< ERROR!
+java.lang.Error: 
+Unresolved compilation problems: 
+	The method createEvaluation(Long, EvaluationDTO) in the type EvaluationService is not applicable for the arguments (EvaluationDTO)
+	The method createEvaluation(Long, EvaluationDTO) in the type EvaluationService is not applicable for the arguments (EvaluationDTO)
+	The method createEvaluation(Long, EvaluationDTO) in the type EvaluationService is not applicable for the arguments (EvaluationDTO)
+	The method createEvaluation(Long, EvaluationDTO) in the type EvaluationService is not applicable for the arguments (EvaluationDTO)
+	The method createEvaluation(Long, EvaluationDTO) in the type EvaluationService is not applicable for the arguments (EvaluationDTO)
+	The method createEvaluation(Long, EvaluationDTO) in the type EvaluationService is not applicable for the arguments (EvaluationDTO)
+
+	at com.dorm.repair.service.EvaluationServiceTest.<init>(EvaluationServiceTest.java:49)
+
+testCreateEvaluation  Time elapsed: 0 s  <<< ERROR!
+java.lang.Error: 
+Unresolved compilation problems: 
+	The method createEvaluation(Long, EvaluationDTO) in the type EvaluationService is not applicable for the arguments (EvaluationDTO)
+	The method createEvaluation(Long, EvaluationDTO) in the type EvaluationService is not applicable for the arguments (EvaluationDTO)
+	The method createEvaluation(Long, EvaluationDTO) in the type EvaluationService is not applicable for the arguments (EvaluationDTO)
+	The method createEvaluation(Long, EvaluationDTO) in the type EvaluationService is not applicable for the arguments (EvaluationDTO)
+	The method createEvaluation(Long, EvaluationDTO) in the type EvaluationService is not applicable for the arguments (EvaluationDTO)
+	The method createEvaluation(Long, EvaluationDTO) in the type EvaluationService is not applicable for the arguments (EvaluationDTO)
+
+	at com.dorm.repair.service.EvaluationServiceTest.<init>(EvaluationServiceTest.java:49)
+
+testFindByOrderIdNotFound  Time elapsed: 0 s  <<< ERROR!
+java.lang.Error: 
+Unresolved compilation problems: 
+	The method createEvaluation(Long, EvaluationDTO) in the type EvaluationService is not applicable for the arguments (EvaluationDTO)
+	The method createEvaluation(Long, EvaluationDTO) in the type EvaluationService is not applicable for the arguments (EvaluationDTO)
+	The method createEvaluation(Long, EvaluationDTO) in the type EvaluationService is not applicable for the arguments (EvaluationDTO)
+	The method createEvaluation(Long, EvaluationDTO) in the type EvaluationService is not applicable for the arguments (EvaluationDTO)
+	The method createEvaluation(Long, EvaluationDTO) in the type EvaluationService is not applicable for the arguments (EvaluationDTO)
+	The method createEvaluation(Long, EvaluationDTO) in the type EvaluationService is not applicable for the arguments (EvaluationDTO)
+
+	at com.dorm.repair.service.EvaluationServiceTest.<init>(EvaluationServiceTest.java:49)
+
+testFindByOrderId  Time elapsed: 0 s  <<< ERROR!
+java.lang.Error: 
+Unresolved compilation problems: 
+	The method createEvaluation(Long, EvaluationDTO) in the type EvaluationService is not applicable for the arguments (EvaluationDTO)
+	The method createEvaluation(Long, EvaluationDTO) in the type EvaluationService is not applicable for the arguments (EvaluationDTO)
+	The method createEvaluation(Long, EvaluationDTO) in the type EvaluationService is not applicable for the arguments (EvaluationDTO)
+	The method createEvaluation(Long, EvaluationDTO) in the type EvaluationService is not applicable for the arguments (EvaluationDTO)
+	The method createEvaluation(Long, EvaluationDTO) in the type EvaluationService is not applicable for the arguments (EvaluationDTO)
+	The method createEvaluation(Long, EvaluationDTO) in the type EvaluationService is not applicable for the arguments (EvaluationDTO)
+
+	at com.dorm.repair.service.EvaluationServiceTest.<init>(EvaluationServiceTest.java:49)
+
