@@ -16,6 +16,8 @@ public class RegisterDTO {
 
     private String role;
 
+    private String specialtyIds;
+
     public String getUsername() {
         return username;
     }
@@ -70,5 +72,13 @@ public class RegisterDTO {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public String getSpecialtyIds() {
+        return specialtyIds;
+    }
+
+    public void setSpecialtyIds(String specialtyIds) {
+        this.specialtyIds = specialtyIds;
     }
 }

@@ -1,5 +1,7 @@
 package com.dorm.repair.dto;
 
+import java.util.List;
+
 public class UpdateOrderStatusDTO {
 
     private Long orderId;
@@ -7,6 +9,8 @@ public class UpdateOrderStatusDTO {
     private String remark;
 
     private String cancelReason;
+
+    private List<String> images;
 
     public Long getOrderId() {
         return orderId;
@@ -30,5 +34,13 @@ public class UpdateOrderStatusDTO {
 
     public void setCancelReason(String cancelReason) {
         this.cancelReason = cancelReason;
+    }
+
+    public List<String> getImages() {
+        return images;
+    }
+
+    public void setImages(List<String> images) {
+        this.images = images;
     }
 }

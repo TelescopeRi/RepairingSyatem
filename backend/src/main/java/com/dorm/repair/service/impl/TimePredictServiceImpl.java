@@ -40,11 +40,12 @@ public class TimePredictServiceImpl implements TimePredictService {
     public TimePredictVO predictTime(Long orderId, Long repairmanId) {
         RepairOrder order = repairOrderService.getById(orderId);
         if (order == null) {
-            return null;
+            throw new RuntimeException("工单不存在");
         }
         
         TimePredictVO vo = new TimePredictVO();
         vo.setOrderId(orderId);
+        vo.setRepairmanId(repairmanId);
         
         int baseMinutes = getBaseTime(order.getFaultTypeId());
         int similarCount = countSimilarOrders(order);

@@ -73,7 +73,7 @@
       <div class="section" v-if="order.images && order.images.length > 0">
         <h3 class="section-title">
           <el-icon><Picture /></el-icon>
-          相关图片
+          报修图片
         </h3>
         <div class="images-container">
           <el-image
@@ -81,6 +81,24 @@
               :key="index"
               :src="img"
               :preview-src-list="order.images"
+              class="preview-image"
+              fit="cover"
+          />
+        </div>
+      </div>
+
+      <!-- 维修完成图片区域 -->
+      <div class="section" v-if="order.repairImages && order.repairImages.length > 0">
+        <h3 class="section-title">
+          <el-icon><Picture /></el-icon>
+          维修完成图片
+        </h3>
+        <div class="images-container">
+          <el-image
+              v-for="(img, index) in order.repairImages"
+              :key="index"
+              :src="img"
+              :preview-src-list="order.repairImages"
               class="preview-image"
               fit="cover"
           />
@@ -134,8 +152,8 @@
         </el-timeline>
       </div>
 
-      <!-- 评价区域（待确认状态时显示） -->
-      <div class="section evaluation-section" v-if="order.status === 'PENDING_CONFIRM' && !order.evaluation">
+      <!-- 评价区域（待确认或已完成状态且未评价时显示） -->
+      <div class="section evaluation-section" v-if="(order.status === 'PENDING_CONFIRM' || order.status === 'COMPLETED') && !order.evaluation">
         <h3 class="section-title">
           <el-icon><Star /></el-icon>
           评价服务

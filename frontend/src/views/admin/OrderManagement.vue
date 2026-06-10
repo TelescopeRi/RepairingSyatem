@@ -2,7 +2,7 @@
   <div class="order-management">
     <el-card>
       <div class="filter-bar">
-        <el-select v-model="statusFilter" placeholder="状态" clearable>
+        <el-select v-model="statusFilter" placeholder="状态" clearable @change="debounceLoadOrders">
           <el-option label="全部" value="" />
           <el-option label="待分配" value="PENDING_ASSIGN" />
           <el-option label="待处理" value="PENDING_TREAT" />
@@ -12,12 +12,30 @@
           <el-option label="已取消" value="CANCELLED" />
         </el-select>
 
-        <el-select v-model="buildingFilter" placeholder="楼栋" clearable>
+        <el-select v-model="buildingFilter" placeholder="楼栋" clearable @change="debounceLoadOrders">
           <el-option label="全部" value="" />
           <el-option v-for="building in buildings" :key="building.id" :label="building.name" :value="building.name" />
         </el-select>
 
-        <el-button type="primary" @click="loadOrders">筛选</el-button>
+        <div class="date-group">
+          <el-date-picker
+            v-model="startDate"
+            type="date"
+            placeholder="开始日期"
+            class="date-input"
+            @change="handleDateChange"
+          />
+          <span class="date-separator">至</span>
+          <el-date-picker
+            v-model="endDate"
+            type="date"
+            placeholder="结束日期"
+            class="date-input"
+            @change="handleDateChange"
+          />
+        </div>
+
+        <el-button @click="resetFilters">重置</el-button>
         <el-button type="success" @click="exportOrders">导出Excel</el-button>
         <el-button 
             type="warning" 
@@ -31,7 +49,7 @@
       <div v-if="pendingOrdersCount > 0" class="ai-prompt">
         <el-alert title="AI智能派单" type="info" closable>
           <span style="margin-right: 20px;">系统检测到 <strong>{{ pendingOrdersCount }}</strong> 个待分配工单</span>
-          <el-button type="text" @click="loadAllRecommendations">查看智能推荐</el-button>
+          <el-button link @click="loadAllRecommendations">查看智能推荐</el-button>
         </el-alert>
       </div>
 
@@ -42,6 +60,60 @@
         <el-table-column prop="faultTypeName" label="故障类型" width="120" />
         <el-table-column prop="studentName" label="学生" width="100" />
         <el-table-column prop="repairmanName" label="维修工" width="100" />
+        <el-table-column label="相关图片" width="120">
+          <template #default="scope">
+            <el-popover v-if="(scope.row.images && scope.row.images.length > 0) || (scope.row.repairImages && scope.row.repairImages.length > 0)" trigger="hover" placement="top-start">
+              <div class="popover-images-container">
+                <!-- 报修图片 -->
+                <div v-if="scope.row.images && scope.row.images.length > 0" class="image-group">
+                  <span class="image-group-label">报修图片</span>
+                  <div class="popover-images">
+                    <el-image
+                        v-for="(img, index) in scope.row.images.slice(0, 5)"
+                        :key="'r-' + index"
+                        :src="img"
+                        :preview-src-list="scope.row.images"
+                        fit="cover"
+                        class="popover-image"
+                    />
+                  </div>
+                </div>
+                <!-- 维修完成图片 -->
+                <div v-if="scope.row.repairImages && scope.row.repairImages.length > 0" class="image-group">
+                  <span class="image-group-label">维修完成图片</span>
+                  <div class="popover-images">
+                    <el-image
+                        v-for="(img, index) in scope.row.repairImages.slice(0, 5)"
+                        :key="'c-' + index"
+                        :src="img"
+                        :preview-src-list="scope.row.repairImages"
+                        fit="cover"
+                        class="popover-image"
+                    />
+                  </div>
+                </div>
+              </div>
+              <template #reference>
+                <div class="thumbnail-wrapper">
+                  <el-image
+                      v-if="scope.row.images && scope.row.images.length > 0"
+                      :src="scope.row.images[0]"
+                      class="thumbnail-image"
+                      fit="cover"
+                  />
+                  <el-image
+                      v-else-if="scope.row.repairImages && scope.row.repairImages.length > 0"
+                      :src="scope.row.repairImages[0]"
+                      class="thumbnail-image"
+                      fit="cover"
+                  />
+                  <span v-if="scope.row.repairImages && scope.row.repairImages.length > 0" class="repair-badge">已完成</span>
+                </div>
+              </template>
+            </el-popover>
+            <span v-else class="no-image">-</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="urgency" label="紧急程度" width="100">
           <template #default="scope">
             <el-tag :type="scope.row.urgency === 'URGENT' ? 'danger' : 'info'">
@@ -75,14 +147,6 @@
                 @click="showManualAssignDialog(scope.row)"
             >
               手动分配
-            </el-button>
-            <el-button
-                v-if="scope.row.status === 'PENDING_CONFIRM'"
-                type="warning"
-                link
-                @click="confirmOrder(scope.row.id)"
-            >
-              确认完成
             </el-button>
           </template>
         </el-table-column>
@@ -194,8 +258,7 @@
           </el-table>
         </div>
 
-        <div v-else class="loading-state">
-          <el-loading :text="'正在计算推荐...'" />
+        <div v-else class="loading-state" v-loading="true" element-loading-text="正在计算推荐...">
         </div>
       </div>
 
@@ -214,7 +277,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from '../../utils/axios'
 import { ElMessage } from 'element-plus'
@@ -222,12 +285,17 @@ import { User, Clock } from '@element-plus/icons-vue'
 
 const router = useRouter()
 
+// 定时刷新定时器
+let refreshTimer = null
+
 const orders = ref([])
 const buildings = ref([])
 const repairmen = ref([])
 
 const statusFilter = ref('')
 const buildingFilter = ref('')
+const startDate = ref('')
+const endDate = ref('')
 
 const showSmartAssignModal = ref(false)
 const showManualAssignModal = ref(false)
@@ -429,17 +497,6 @@ const loadAllRecommendations = () => {
   }
 }
 
-// 确认工单完成
-const confirmOrder = async (orderId) => {
-  try {
-    await axios.post(`/api/admin/orders/${orderId}/confirm`)
-    ElMessage.success('确认成功')
-    loadOrders()
-  } catch (error) {
-    ElMessage.error(error.response?.data?.message || '确认失败')
-  }
-}
-
 // 导出Excel
 const exportOrders = async () => {
   try {
@@ -478,6 +535,8 @@ const loadOrders = async () => {
     const params = {}
     if (statusFilter.value) params.status = statusFilter.value
     if (buildingFilter.value) params.building = buildingFilter.value
+    if (startDate.value) params.startDate = formatDate(startDate.value)
+    if (endDate.value) params.endDate = formatDate(endDate.value)
 
     const response = await axios.get('/api/admin/orders', { params })
     orders.value = response.data
@@ -485,6 +544,46 @@ const loadOrders = async () => {
     console.error('加载工单失败', error)
     ElMessage.error('加载工单失败')
   }
+}
+
+// 防抖函数
+const debounce = (fn, delay) => {
+  let timer = null
+  return function (...args) {
+    if (timer) clearTimeout(timer)
+    timer = setTimeout(() => fn(...args), delay)
+  }
+}
+
+// 防抖加载工单列表
+const debounceLoadOrders = debounce(loadOrders, 300)
+
+// 日期变化处理（带校验）
+const handleDateChange = () => {
+  if (startDate.value && endDate.value) {
+    const start = new Date(startDate.value)
+    const end = new Date(endDate.value)
+    if (end < start) {
+      ElMessage.error('结束日期不能早于开始日期')
+      endDate.value = ''
+    }
+  }
+  debounceLoadOrders()
+}
+
+// 格式化日期
+const formatDate = (date) => {
+  const d = new Date(date)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+// 重置筛选条件
+const resetFilters = () => {
+  statusFilter.value = ''
+  buildingFilter.value = ''
+  startDate.value = ''
+  endDate.value = ''
+  debounceLoadOrders()
 }
 
 // 加载楼栋列表
@@ -510,10 +609,24 @@ const loadRepairmen = async () => {
   }
 }
 
+// 处理工单更新事件
+const handleOrderUpdated = (event) => {
+  console.log('收到工单更新事件:', event.detail)
+  loadOrders()
+}
+
 onMounted(() => {
   loadOrders()
   loadBuildings()
   loadRepairmen()
+  
+  // 监听WebSocket推送的工单更新事件
+  window.addEventListener('orderUpdated', handleOrderUpdated)
+})
+
+onUnmounted(() => {
+  // 清理事件监听
+  window.removeEventListener('orderUpdated', handleOrderUpdated)
 })
 </script>
 
@@ -531,6 +644,20 @@ onMounted(() => {
 
 .filter-bar .el-select {
   width: 150px;
+}
+
+.date-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.date-input {
+  width: 140px;
+}
+
+.date-separator {
+  color: #999;
 }
 
 .ai-prompt {
@@ -630,5 +757,68 @@ onMounted(() => {
 
 .batch-preview {
   margin-top: 15px;
+}
+
+.thumbnail-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.thumbnail-image {
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.repair-badge {
+  position: absolute;
+  bottom: -8px;
+  right: -8px;
+  background: #67c23a;
+  color: white;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+
+.popover-images-container {
+  padding: 10px;
+  max-width: 350px;
+}
+
+.image-group {
+  margin-bottom: 12px;
+}
+
+.image-group:last-child {
+  margin-bottom: 0;
+}
+
+.image-group-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #eee;
+}
+
+.popover-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.popover-image {
+  width: 80px;
+  height: 80px;
+  border-radius: 4px;
+}
+
+.no-image {
+  color: #999;
+  font-size: 12px;
 }
 </style>

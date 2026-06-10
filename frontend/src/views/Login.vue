@@ -43,8 +43,8 @@
           <!-- 用户类型选择 -->
           <div class="user-type-selector">
             <el-radio-group v-model="registerForm.userType" @change="handleUserTypeChange">
-              <el-radio label="STUDENT">学生注册</el-radio>
-              <el-radio label="REPAIR">修理工注册</el-radio>
+              <el-radio value="STUDENT">学生注册</el-radio>
+              <el-radio value="REPAIR">修理工注册</el-radio>
             </el-radio-group>
           </div>
 
@@ -92,22 +92,16 @@
                   :value="generatedRepairmanCode || '系统将自动生成'"
                   disabled
                   placeholder="系统将自动生成"
-                >
-                  <template #suffix>
-                    <el-tooltip content="工号由系统自动生成，格式：WX + 日期 + 序号（如 WX202401010001）">
-                      <el-icon><QuestionFilled /></el-icon>
-                    </el-tooltip>
-                  </template>
-                </el-input>
+                />
               </el-form-item>
-              <el-form-item label="负责楼栋" prop="building">
+              <el-form-item label="擅长类型">
                 <el-select 
-                  v-model="registerForm.building" 
-                  placeholder="请选择负责楼栋" 
-                  :disabled="false"
-                  @change="console.log('楼栋选择:', registerForm.building)"
+                  v-model="registerForm.specialtyIds" 
+                  multiple
+                  placeholder="请选择擅长修理类型（可多选）" 
+                  style="width: 100%"
                 >
-                  <el-option v-for="building in buildings" :key="building.id" :label="building.name" :value="building.name" />
+                  <el-option v-for="type in faultTypes" :key="type.id" :label="type.name" :value="type.id" />
                 </el-select>
               </el-form-item>
             </template>
@@ -175,13 +169,13 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user'
 import axios from '../utils/axios'
 import { ElMessage } from 'element-plus'
-import { QuestionFilled } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const userStore = useUserStore()
 
 const activeTab = ref('login')
 const buildings = ref([])
+const faultTypes = ref([])
 const loginFormRef = ref(null)
 const registerFormRef = ref(null)
 const generatedRepairmanCode = ref('')
@@ -198,6 +192,7 @@ const registerForm = ref({
   phone: '',
   building: '',
   dormNumber: '',
+  specialtyIds: [],
   password: '',
   confirmPassword: ''
 })
@@ -289,6 +284,7 @@ const handleUserTypeChange = () => {
   registerForm.value.phone = ''
   registerForm.value.building = ''
   registerForm.value.dormNumber = ''
+  registerForm.value.specialtyIds = []
   registerForm.value.password = ''
   registerForm.value.confirmPassword = ''
   generatedRepairmanCode.value = ''
@@ -316,6 +312,7 @@ const handleRegister = async () => {
         phone: registerForm.value.phone,
         building: registerForm.value.building,
         dormNumber: registerForm.value.dormNumber,
+        specialtyIds: registerForm.value.specialtyIds.length > 0 ? registerForm.value.specialtyIds.join(',') : null,
         role: registerForm.value.userType
       })
       
@@ -349,8 +346,18 @@ const loadBuildings = async () => {
   }
 }
 
+const loadFaultTypes = async () => {
+  try {
+    const response = await axios.get('/api/student/fault-types')
+    faultTypes.value = response.data || []
+  } catch (error) {
+    console.error('加载故障类型失败', error)
+  }
+}
+
 onMounted(() => {
   loadBuildings()
+  loadFaultTypes()
 })
 </script>
 

@@ -14,7 +14,16 @@ export default defineConfig({
       '/uploads': {
         target: 'http://localhost:8080',
         changeOrigin: true
+      },
+      '/ws': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        ws: true
       }
     }
+  },
+  define: {
+    // 为 sockjs-client 提供全局对象支持
+    'global': 'window'
   }
 })

@@ -25,9 +25,6 @@ public class AuthController {
     @Resource
     private JwtUtils jwtUtils;
     
-    @Resource
-    private PasswordUtils passwordUtils;
-    
     @PostMapping("/login")
     public LoginVO login(@RequestBody LoginDTO dto) {
         User user = userService.login(dto.getUsername(), dto.getPassword());
@@ -54,7 +51,7 @@ public class AuthController {
     public UserVO initAdmin(@RequestParam(defaultValue = "admin") String username, 
                            @RequestParam(defaultValue = "admin123") String password,
                            @RequestParam(defaultValue = "管理员") String realName) {
-        // 检查是否已存在管理员
+        // 检查是否已存在管理员（包括已删除的）
         QueryWrapper<User> wrapper = new QueryWrapper<>();
         wrapper.eq("role", "ADMIN");
         List<User> admins = userService.list(wrapper);
@@ -65,7 +62,7 @@ public class AuthController {
         // 创建管理员
         User admin = new User();
         admin.setUsername(username);
-        admin.setPassword(passwordUtils.encode(password));
+        admin.setPassword(PasswordUtils.encode(password));
         admin.setRealName(realName);
         admin.setRole("ADMIN");
         admin.setStatus(1);

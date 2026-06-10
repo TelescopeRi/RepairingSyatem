@@ -23,13 +23,9 @@ public interface RepairOrderService extends IService<RepairOrder> {
     
     void startRepair(Long orderId);
     
-    void completeRepair(Long orderId, String remark);
-    
-    void confirmOrder(Long orderId);
-    
+    void completeRepair(Long orderId, String remark, java.util.List<String> images);
+
     void cancelOrder(Long orderId, String reason);
-    
-    void autoCompletePendingConfirm();
-    
+
     List<RepairOrder> findByStatus(String status);
 }

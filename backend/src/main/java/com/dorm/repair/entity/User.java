@@ -7,7 +7,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 
 import java.time.LocalDateTime;
 
-@TableName("user")
+@TableName("`user`")
 public class User {
 
     @TableId(type = IdType.AUTO)
@@ -42,6 +42,9 @@ public class User {
 
     @TableField("specialty_ids")
     private String specialtyIds;
+
+    @TableField("is_deleted")
+    private Integer isDeleted;
 
     public Long getId() {
         return id;
@@ -133,5 +136,13 @@ public class User {
 
     public void setSpecialtyIds(String specialtyIds) {
         this.specialtyIds = specialtyIds;
+    }
+
+    public Integer getIsDeleted() {
+        return isDeleted;
+    }
+
+    public void setIsDeleted(Integer isDeleted) {
+        this.isDeleted = isDeleted;
     }
 }

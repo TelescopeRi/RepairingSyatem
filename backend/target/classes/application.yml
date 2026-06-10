@@ -1,6 +1,9 @@
-
 server:
   port: 8080
+
+jwt:
+  secret: dorm-repair-system-secret-key-2024
+  expiration: 86400000
 
 spring:
   datasource:
@@ -8,26 +11,11 @@ spring:
     username: root
     password: root
     driver-class-name: com.mysql.cj.jdbc.Driver
-    hikari:
-      maximum-pool-size: 10
-      minimum-idle: 5
-      idle-timeout: 30000
-      connection-timeout: 30000
-  
-  sql:
-    init:
-      encoding: UTF-8
-      mode: never
   
   servlet:
     multipart:
-      enabled: true
-      max-file-size: 5MB
-      max-request-size: 15MB
-
-  jackson:
-    date-format: yyyy-MM-dd HH:mm:ss
-    time-zone: Asia/Shanghai
+      max-file-size: 10MB
+      max-request-size: 10MB
 
 mybatis-plus:
   configuration:
@@ -35,14 +23,19 @@ mybatis-plus:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
   global-config:
     db-config:
-      id-type: auto
       table-underline: true
 
-# JWT配置
-jwt:
-  secret: dorm-repair-secret-key-2024-secure-enough-for-jwt-hs256-algorithm-minimum-256-bits
-  expiration: 86400000
+agent:
+  deepseek:
+    api-key: sk-1a5ca3d76cfe464cbb16fdaf8d946d45
+    base-url: https://api.deepseek.com
+    model: deepseek-chat
+    timeout: 60000
+    temperature: 0.7
 
-# 文件上传配置
 upload:
-  path: ./uploads/
+  path: ${UPLOAD_PATH:uploads}  # 支持环境变量覆盖，默认为相对路径
+
+logging:
+  level:
+    com.dorm.repair: DEBUG

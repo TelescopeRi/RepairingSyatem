@@ -82,6 +82,60 @@
         <el-table-column prop="dormNumber" label="宿舍号" width="100" align="center" />
         <el-table-column prop="faultTypeName" label="故障类型" width="120" align="center" />
         <el-table-column prop="description" label="描述" min-width="180" show-overflow-tooltip />
+        <el-table-column label="相关图片" width="100" align="center">
+          <template #default="scope">
+            <el-popover v-if="(scope.row.images && scope.row.images.length > 0) || (scope.row.repairImages && scope.row.repairImages.length > 0)" trigger="hover" placement="top-start">
+              <div class="popover-images-container">
+                <!-- 报修图片 -->
+                <div v-if="scope.row.images && scope.row.images.length > 0" class="image-group">
+                  <span class="image-group-label">报修图片</span>
+                  <div class="popover-images">
+                    <el-image
+                        v-for="(img, index) in scope.row.images.slice(0, 5)"
+                        :key="'r-' + index"
+                        :src="img"
+                        :preview-src-list="scope.row.images"
+                        fit="cover"
+                        class="popover-image"
+                    />
+                  </div>
+                </div>
+                <!-- 维修完成图片 -->
+                <div v-if="scope.row.repairImages && scope.row.repairImages.length > 0" class="image-group">
+                  <span class="image-group-label">维修完成图片</span>
+                  <div class="popover-images">
+                    <el-image
+                        v-for="(img, index) in scope.row.repairImages.slice(0, 5)"
+                        :key="'c-' + index"
+                        :src="img"
+                        :preview-src-list="scope.row.repairImages"
+                        fit="cover"
+                        class="popover-image"
+                    />
+                  </div>
+                </div>
+              </div>
+              <template #reference>
+                <div class="thumbnail-wrapper">
+                  <el-image
+                      v-if="scope.row.images && scope.row.images.length > 0"
+                      :src="scope.row.images[0]"
+                      class="thumbnail-image"
+                      fit="cover"
+                  />
+                  <el-image
+                      v-else-if="scope.row.repairImages && scope.row.repairImages.length > 0"
+                      :src="scope.row.repairImages[0]"
+                      class="thumbnail-image"
+                      fit="cover"
+                  />
+                  <span v-if="scope.row.repairImages && scope.row.repairImages.length > 0" class="repair-badge">已完成</span>
+                </div>
+              </template>
+            </el-popover>
+            <span v-else class="no-image">-</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="urgency" label="紧急程度" width="100" align="center">
           <template #default="scope">
             <el-tag :type="scope.row.urgency === 'URGENT' ? 'danger' : 'info'" size="small">
@@ -101,7 +155,7 @@
             <template v-if="scope.row.evaluation">
               <el-rate :model-value="scope.row.evaluation.rating" disabled size="small" />
             </template>
-            <template v-else-if="scope.row.status === 'PENDING_CONFIRM'">
+            <template v-else-if="scope.row.status === 'PENDING_CONFIRM' || scope.row.status === 'COMPLETED'">
               <el-tag type="warning" size="small">待评价</el-tag>
             </template>
             <template v-else>
@@ -116,7 +170,7 @@
               详情
             </el-button>
             <el-button
-                v-if="scope.row.status === 'PENDING_CONFIRM' && !scope.row.evaluation"
+                v-if="(scope.row.status === 'PENDING_CONFIRM' || scope.row.status === 'COMPLETED') && !scope.row.evaluation"
                 type="warning"
                 link
                 @click="showRatingDialog(scope.row)"
@@ -638,6 +692,69 @@ onMounted(() => {
 
   :deep(.el-table .cell) {
     padding: 8px 6px;
+  }
+
+  .thumbnail-wrapper {
+    position: relative;
+    display: inline-block;
+  }
+
+  .thumbnail-image {
+    width: 36px;
+    height: 36px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  .repair-badge {
+    position: absolute;
+    bottom: -8px;
+    right: -8px;
+    background: #67c23a;
+    color: white;
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 10px;
+  }
+
+  .popover-images-container {
+    padding: 10px;
+    max-width: 320px;
+  }
+
+  .image-group {
+    margin-bottom: 12px;
+  }
+
+  .image-group:last-child {
+    margin-bottom: 0;
+  }
+
+  .image-group-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #666;
+    margin-bottom: 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #eee;
+  }
+
+  .popover-images {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .popover-image {
+    width: 70px;
+    height: 70px;
+    border-radius: 4px;
+  }
+
+  .no-image {
+    color: #999;
+    font-size: 12px;
   }
 }
 </style>

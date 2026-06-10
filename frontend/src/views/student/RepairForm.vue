@@ -47,7 +47,7 @@
         </el-form-item>
 
         <el-form-item label="楼栋" prop="building" required>
-          <el-select v-model="form.building" placeholder="请选择楼栋" style="width: 100%">
+          <el-select v-model="form.building" placeholder="请选择楼栋" style="width: 100%" :disabled="!!userStore.user?.building">
             <el-option v-for="building in buildings" :key="building.id" :label="building.name" :value="building.name" />
           </el-select>
         </el-form-item>
@@ -58,6 +58,7 @@
             placeholder="请输入宿舍号，如：101"
             maxlength="20"
             show-word-limit
+            :disabled="!!userStore.user?.dormNumber"
           />
         </el-form-item>
 

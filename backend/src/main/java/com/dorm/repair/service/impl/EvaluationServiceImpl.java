@@ -36,8 +36,8 @@ public class EvaluationServiceImpl extends ServiceImpl<EvaluationMapper, Evaluat
             throw new RuntimeException("无权评价此工单");
         }
 
-        // 3. 检查工单状态是否允许评价（只有待确认状态才能评价）
-        if (!"PENDING_CONFIRM".equals(order.getStatus())) {
+        // 3. 检查工单状态是否允许评价（待确认和已完成状态都可以评价）
+        if (!"PENDING_CONFIRM".equals(order.getStatus()) && !"COMPLETED".equals(order.getStatus())) {
             throw new RuntimeException("工单状态不允许评价");
         }
 
@@ -56,9 +56,6 @@ public class EvaluationServiceImpl extends ServiceImpl<EvaluationMapper, Evaluat
         evaluation.setCreateTime(LocalDateTime.now());
 
         baseMapper.insert(evaluation);
-
-        // 6. 确认工单（更新工单状态为已完成）
-        repairOrderService.confirmOrder(dto.getOrderId());
 
         return evaluation;
     }

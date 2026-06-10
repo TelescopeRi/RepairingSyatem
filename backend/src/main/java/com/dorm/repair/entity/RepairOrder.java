@@ -34,6 +34,9 @@ public class RepairOrder {
     @TableField("images")
     private String images;
 
+    @TableField("repair_images")
+    private String repairImages;
+
     @TableField("urgency")
     private String urgency;
 
@@ -57,6 +60,9 @@ public class RepairOrder {
 
     @TableField("cancel_reason")
     private String cancelReason;
+
+    @TableField("is_deleted")
+    private Integer isDeleted;
 
     public Long getId() {
         return id;
@@ -122,6 +128,14 @@ public class RepairOrder {
         this.images = images;
     }
 
+    public String getRepairImages() {
+        return repairImages;
+    }
+
+    public void setRepairImages(String repairImages) {
+        this.repairImages = repairImages;
+    }
+
     public String getUrgency() {
         return urgency;
     }
@@ -184,5 +198,13 @@ public class RepairOrder {
 
     public void setCancelReason(String cancelReason) {
         this.cancelReason = cancelReason;
+    }
+
+    public Integer getIsDeleted() {
+        return isDeleted;
+    }
+
+    public void setIsDeleted(Integer isDeleted) {
+        this.isDeleted = isDeleted;
     }
 }

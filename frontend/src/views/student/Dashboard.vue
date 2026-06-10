@@ -62,18 +62,6 @@
       </el-card>
 
       <el-card class="stat-card">
-        <div class="stat-icon pending-confirm">
-          <el-icon :size="32">
-            <CircleCheck />
-          </el-icon>
-        </div>
-        <div class="stat-info">
-          <span class="stat-value">{{ pendingConfirmCount }}</span>
-          <span class="stat-label">待确认</span>
-        </div>
-      </el-card>
-
-      <el-card class="stat-card">
         <div class="stat-icon completed">
           <el-icon :size="32">
             <Select />
@@ -86,32 +74,6 @@
       </el-card>
     </div>
 
-    <!-- 待确认工单提醒 -->
-    <el-card v-if="pendingConfirmOrders.length > 0" class="reminder-card">
-      <template #header>
-        <span class="card-title">待确认工单提醒</span>
-        <span class="card-tip">维修已完成，请及时确认并评价</span>
-      </template>
-
-      <el-table :data="pendingConfirmOrders" border stripe>
-        <el-table-column prop="building" label="楼栋" width="100" />
-        <el-table-column prop="dormNumber" label="宿舍号" width="100" />
-        <el-table-column prop="faultTypeName" label="故障类型" width="120" />
-        <el-table-column prop="description" label="故障描述" show-overflow-tooltip />
-        <el-table-column prop="completeTime" label="完成时间" width="160" />
-        <el-table-column label="操作" width="150">
-          <template #default="scope">
-            <el-button type="primary" size="small" @click="goToConfirm(scope.row.id)">
-              确认完成
-            </el-button>
-            <el-button type="info" size="small" link @click="goToDetail(scope.row.id)">
-              详情
-            </el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-    </el-card>
-
     <!-- 公告栏 -->
     <el-card class="notice-card">
       <template #header>
@@ -119,7 +81,7 @@
       </template>
       <div class="notice-content">
         <p>尊敬的同学，欢迎使用宿舍报修管理系统！</p>
-        <p>报修流程：提交报修 → 管理员分配 → 维修工处理 → 确认完成 → 评价</p>
+        <p>报修流程：提交报修 → 管理员分配 → 维修工处理 → 评价</p>
         <p>紧急报修请拨打后勤服务热线：12345</p>
         <p>维修完成后请及时确认并给予评价，您的反馈是我们进步的动力！</p>
       </div>
@@ -128,7 +90,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/user'
 import axios from '../../utils/axios'
@@ -136,6 +98,9 @@ import { Tools, Document, Clock, Loading, CircleCheck, Select } from '@element-p
 
 const router = useRouter()
 const userStore = useUserStore()
+
+// 定时刷新定时器
+let refreshTimer = null
 
 const orders = ref([])
 const loading = ref(false)
@@ -149,17 +114,8 @@ const inProgressCount = computed(() =>
     orders.value.filter(o => o.status === 'IN_PROGRESS').length
 )
 
-const pendingConfirmCount = computed(() =>
-    orders.value.filter(o => o.status === 'PENDING_CONFIRM').length
-)
-
 const completedCount = computed(() =>
     orders.value.filter(o => o.status === 'COMPLETED').length
-)
-
-// 待确认工单列表
-const pendingConfirmOrders = computed(() =>
-    orders.value.filter(o => o.status === 'PENDING_CONFIRM')
 )
 
 // 跳转到报修页面
@@ -203,9 +159,23 @@ const getUserInfo = () => {
   }
 }
 
+// 处理工单更新事件
+const handleOrderUpdated = (event) => {
+  console.log('学生端收到工单更新事件:', event.detail)
+  loadOrders()
+}
+
 onMounted(() => {
   getUserInfo()
   loadOrders()
+  
+  // 监听WebSocket推送的工单更新事件
+  window.addEventListener('studentOrderUpdated', handleOrderUpdated)
+})
+
+onUnmounted(() => {
+  // 清理事件监听
+  window.removeEventListener('studentOrderUpdated', handleOrderUpdated)
 })
 </script>
 

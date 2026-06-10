@@ -32,10 +32,13 @@ public class SecurityConfig {
                 .antMatchers("/api/student/buildings").permitAll()
                 .antMatchers("/api/student/fault-types").permitAll()
                 .antMatchers("/api/student/upload").permitAll()
+                .antMatchers("/api/repair/upload").permitAll()  // 放行修理工上传接口
                 .antMatchers("/uploads/**").permitAll()
+                .antMatchers("/ws/**").permitAll()  // 放行 WebSocket 路径
                 .antMatchers("/api/student/**").hasRole("STUDENT")
                 .antMatchers("/api/repair/**").hasRole("REPAIR")
                 .antMatchers("/api/admin/**").hasRole("ADMIN")
+                .antMatchers("/api/agent/**").hasRole("ADMIN")
                 .antMatchers("/api/ai/assign/**").hasRole("ADMIN")
                 .antMatchers("/api/ai/recommend/**").hasRole("ADMIN")
                 .antMatchers("/api/ai/predict/**").permitAll()

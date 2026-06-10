@@ -3,6 +3,46 @@
     <el-card>
       <div class="filter-bar">
         <el-button type="primary" @click="showAddDialog">添加维修工</el-button>
+        
+        <div class="filters">
+          <el-input
+            v-model="filters.name"
+            placeholder="按姓名搜索"
+            class="filter-input"
+            @input="debounceLoadRepairmen"
+          />
+          <el-input
+            v-model="filters.username"
+            placeholder="按工号搜索"
+            class="filter-input"
+            @input="debounceLoadRepairmen"
+          />
+          <el-select
+            v-model="filters.status"
+            placeholder="状态筛选"
+            class="filter-input"
+            @change="loadRepairmen"
+          >
+            <el-option label="全部" :value="''" />
+            <el-option label="正常" :value="1" />
+            <el-option label="禁用" :value="0" />
+          </el-select>
+          <el-select
+            v-model="filters.specialtyId"
+            placeholder="擅长类型筛选"
+            class="filter-input"
+            @change="loadRepairmen"
+          >
+            <el-option label="全部" :value="''" />
+            <el-option
+              v-for="type in faultTypes"
+              :key="type.id"
+              :label="type.name"
+              :value="type.id"
+            />
+          </el-select>
+          <el-button @click="resetFilters">重置</el-button>
+        </div>
       </div>
 
       <el-table :data="repairmen" border stripe>
@@ -53,14 +93,6 @@
     <!-- 添加维修工对话框 -->
     <el-dialog title="添加维修工" v-model="showAddModal" width="500px">
       <el-form :model="form" :rules="formRules" ref="addFormRef" label-width="80px">
-        <el-form-item label="工号" prop="username">
-          <el-input 
-            v-model="form.username" 
-            placeholder="请输入工号"
-            maxlength="20"
-            show-word-limit
-          />
-        </el-form-item>
         <el-form-item label="姓名" prop="realName">
           <el-input 
             v-model="form.realName" 
@@ -155,6 +187,13 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 const repairmen = ref([])
 const faultTypes = ref([])
 
+const filters = ref({
+  name: '',
+  username: '',
+  status: '',
+  specialtyId: ''
+})
+
 const showAddModal = ref(false)
 const showEditModal = ref(false)
 const addFormRef = ref(null)
@@ -170,10 +209,6 @@ const form = ref({
 
 // 表单验证规则
 const formRules = {
-  username: [
-    { required: true, message: '请输入工号', trigger: 'blur' },
-    { min: 2, max: 20, message: '工号长度在 2 到 20 个字符', trigger: 'blur' }
-  ],
   realName: [
     { required: true, message: '请输入姓名', trigger: 'blur' },
     { min: 2, max: 50, message: '姓名长度在 2 到 50 个字符', trigger: 'blur' }
@@ -319,12 +354,41 @@ const deleteRepairman = async (id) => {
 // 加载维修工列表
 const loadRepairmen = async () => {
   try {
-    const response = await axios.get('/api/admin/repairmen')
+    const params = {}
+    if (filters.value.name) params.name = filters.value.name
+    if (filters.value.username) params.username = filters.value.username
+    if (filters.value.status !== '') params.status = filters.value.status
+    if (filters.value.specialtyId) params.specialtyId = filters.value.specialtyId
+    
+    const response = await axios.get('/api/admin/repairmen', { params })
     repairmen.value = response.data
   } catch (error) {
     console.error('加载维修工失败', error)
     ElMessage.error('加载维修工失败')
   }
+}
+
+// 防抖函数
+const debounce = (fn, delay) => {
+  let timer = null
+  return function (...args) {
+    if (timer) clearTimeout(timer)
+    timer = setTimeout(() => fn(...args), delay)
+  }
+}
+
+// 防抖加载维修工列表
+const debounceLoadRepairmen = debounce(loadRepairmen, 300)
+
+// 重置筛选条件
+const resetFilters = () => {
+  filters.value = {
+    name: '',
+    username: '',
+    status: '',
+    specialtyId: ''
+  }
+  loadRepairmen()
 }
 
 // 加载故障类型
@@ -350,5 +414,18 @@ onMounted(() => {
 
 .filter-bar {
   margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.filters {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.filter-input {
+  width: 180px;
 }
 </style>

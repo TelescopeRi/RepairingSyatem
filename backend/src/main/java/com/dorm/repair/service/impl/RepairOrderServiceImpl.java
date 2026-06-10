@@ -2,12 +2,14 @@ package com.dorm.repair.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.dorm.repair.controller.WebSocketController;
 import com.dorm.repair.dto.RepairOrderDTO;
 import com.dorm.repair.entity.RepairOrder;
 import com.dorm.repair.entity.User;
 import com.dorm.repair.mapper.RepairOrderMapper;
 import com.dorm.repair.mapper.UserMapper;
 import com.dorm.repair.service.RepairOrderService;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +22,10 @@ public class RepairOrderServiceImpl extends ServiceImpl<RepairOrderMapper, Repai
 
     @Resource
     private UserMapper userMapper;
+    
+    @Resource
+    @Lazy
+    private WebSocketController webSocketController;
 
     @Override
     @Transactional
@@ -41,6 +47,10 @@ public class RepairOrderServiceImpl extends ServiceImpl<RepairOrderMapper, Repai
         order.setSubmitTime(LocalDateTime.now());
 
         baseMapper.insert(order);
+        
+        // 发送新工单消息
+        webSocketController.sendNewOrder(order);
+        
         return order;
     }
 
@@ -48,6 +58,7 @@ public class RepairOrderServiceImpl extends ServiceImpl<RepairOrderMapper, Repai
     public List<RepairOrder> findByStudentId(Long studentId) {
         QueryWrapper<RepairOrder> wrapper = new QueryWrapper<>();
         wrapper.eq("student_id", studentId);
+        wrapper.eq("is_deleted", 0);
         wrapper.orderByDesc("submit_time");
         return baseMapper.selectList(wrapper);
     }
@@ -56,6 +67,7 @@ public class RepairOrderServiceImpl extends ServiceImpl<RepairOrderMapper, Repai
     public List<RepairOrder> findByRepairmanId(Long repairmanId) {
         QueryWrapper<RepairOrder> wrapper = new QueryWrapper<>();
         wrapper.eq("repairman_id", repairmanId);
+        wrapper.eq("is_deleted", 0);
         wrapper.orderByDesc("submit_time");
         return baseMapper.selectList(wrapper);
     }
@@ -64,6 +76,7 @@ public class RepairOrderServiceImpl extends ServiceImpl<RepairOrderMapper, Repai
     public List<RepairOrder> findPendingAssign() {
         QueryWrapper<RepairOrder> wrapper = new QueryWrapper<>();
         wrapper.eq("status", "PENDING_ASSIGN");
+        wrapper.eq("is_deleted", 0);
         wrapper.orderByDesc("urgency").orderByDesc("submit_time");
         return baseMapper.selectList(wrapper);
     }
@@ -73,6 +86,7 @@ public class RepairOrderServiceImpl extends ServiceImpl<RepairOrderMapper, Repai
         QueryWrapper<RepairOrder> wrapper = new QueryWrapper<>();
         wrapper.eq("repairman_id", repairmanId);
         wrapper.eq("status", "PENDING_TREAT");
+        wrapper.eq("is_deleted", 0);
         wrapper.orderByDesc("urgency").orderByDesc("assign_time");
         return baseMapper.selectList(wrapper);
     }
@@ -93,6 +107,9 @@ public class RepairOrderServiceImpl extends ServiceImpl<RepairOrderMapper, Repai
         order.setStatus("PENDING_TREAT");
         order.setAssignTime(LocalDateTime.now());
         updateById(order);
+        
+        // 发送分配消息给修理工
+        webSocketController.sendOrderAssigned(order, repairmanId);
     }
 
     @Override
@@ -110,11 +127,14 @@ public class RepairOrderServiceImpl extends ServiceImpl<RepairOrderMapper, Repai
         order.setStatus("IN_PROGRESS");
         order.setStartTime(LocalDateTime.now());
         updateById(order);
+        
+        // 发送状态变更消息
+        webSocketController.sendOrderStatusChange(orderId, "IN_PROGRESS");
     }
 
     @Override
     @Transactional
-    public void completeRepair(Long orderId, String remark) {
+    public void completeRepair(Long orderId, String remark, java.util.List<String> images) {
         RepairOrder order = getById(orderId);
         if (order == null) {
             throw new RuntimeException("工单不存在");
@@ -124,26 +144,24 @@ public class RepairOrderServiceImpl extends ServiceImpl<RepairOrderMapper, Repai
             throw new RuntimeException("工单状态不允许完成");
         }
 
-        order.setStatus("PENDING_CONFIRM");
+        order.setStatus("COMPLETED");
         order.setRemark(remark);
         order.setCompleteTime(LocalDateTime.now());
-        updateById(order);
-    }
 
-    @Override
-    @Transactional
-    public void confirmOrder(Long orderId) {
-        RepairOrder order = getById(orderId);
-        if (order == null) {
-            throw new RuntimeException("工单不存在");
+        if (images != null && !images.isEmpty()) {
+            // 过滤空字符串
+            java.util.List<String> validImages = images.stream()
+                    .filter(img -> img != null && !img.trim().isEmpty())
+                    .collect(java.util.stream.Collectors.toList());
+            if (!validImages.isEmpty()) {
+                order.setRepairImages(String.join(",", validImages));
+            }
         }
 
-        if (!"PENDING_CONFIRM".equals(order.getStatus())) {
-            throw new RuntimeException("工单状态不允许确认");
-        }
-
-        order.setStatus("COMPLETED");
         updateById(order);
+        
+        // 发送状态变更消息
+        webSocketController.sendOrderStatusChange(orderId, "COMPLETED");
     }
 
     @Override
@@ -165,24 +183,17 @@ public class RepairOrderServiceImpl extends ServiceImpl<RepairOrderMapper, Repai
     }
 
     @Override
-    @Transactional
-    public void autoCompletePendingConfirm() {
-        LocalDateTime sevenDaysAgo = LocalDateTime.now().minusDays(7);
-        QueryWrapper<RepairOrder> wrapper = new QueryWrapper<>();
-        wrapper.eq("status", "PENDING_CONFIRM");
-        wrapper.lt("complete_time", sevenDaysAgo);
-
-        List<RepairOrder> orders = baseMapper.selectList(wrapper);
-        for (RepairOrder order : orders) {
-            order.setStatus("COMPLETED");
-            updateById(order);
-        }
-    }
-
-    @Override
     public List<RepairOrder> findByStatus(String status) {
         QueryWrapper<RepairOrder> wrapper = new QueryWrapper<>();
         wrapper.eq("status", status);
+        wrapper.eq("is_deleted", 0);
+        return baseMapper.selectList(wrapper);
+    }
+    
+    @Override
+    public List<RepairOrder> list() {
+        QueryWrapper<RepairOrder> wrapper = new QueryWrapper<>();
+        wrapper.eq("is_deleted", 0);
         return baseMapper.selectList(wrapper);
     }
 }

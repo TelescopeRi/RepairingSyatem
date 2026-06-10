@@ -2,10 +2,13 @@ package com.dorm.repair.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.dorm.repair.dto.AssignOrderDTO;
+import com.dorm.repair.dto.BatchOperationResultDTO;
+import com.dorm.repair.dto.RegisterDTO;
 import com.dorm.repair.entity.*;
 import com.dorm.repair.mapper.FaultTypeMapper;
 import com.dorm.repair.mapper.UserMapper;
 import com.dorm.repair.service.*;
+import com.dorm.repair.utils.ExcelUtils;
 import com.dorm.repair.utils.PasswordUtils;
 import com.dorm.repair.vo.RepairOrderVO;
 import com.dorm.repair.vo.StatisticsVO;
@@ -17,9 +20,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import org.springframework.web.multipart.MultipartFile;
 
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -59,37 +65,101 @@ public class AdminController {
     private PasswordUtils passwordUtils;
     
     @GetMapping("/students")
-    public List<UserVO> getStudents() {
-        return userService.findByRole("STUDENT").stream()
+    public List<UserVO> getStudents(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String username,
+            @RequestParam(required = false) String building,
+            @RequestParam(required = false) Integer status) {
+        QueryWrapper<User> wrapper = new QueryWrapper<>();
+        wrapper.eq("role", "STUDENT");
+        wrapper.eq("is_deleted", 0);
+        
+        if (name != null && !name.isEmpty()) {
+            wrapper.like("real_name", name);
+        }
+        
+        if (username != null && !username.isEmpty()) {
+            wrapper.like("username", username);
+        }
+        
+        if (building != null && !building.isEmpty()) {
+            wrapper.eq("building", building);
+        }
+        
+        if (status != null) {
+            wrapper.eq("status", status);
+        }
+        
+        wrapper.orderByDesc("create_time");
+        
+        List<User> users = userService.list(wrapper);
+        return users.stream()
                 .map(this::convertToUserVO)
                 .collect(Collectors.toList());
     }
     
     @GetMapping("/repairmen")
-    public List<UserVO> getRepairmen() {
-        return userService.findByRole("REPAIR").stream()
+    public List<UserVO> getRepairmen(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String username,
+            @RequestParam(required = false) Integer status,
+            @RequestParam(required = false) Long specialtyId) {
+        QueryWrapper<User> wrapper = new QueryWrapper<>();
+        wrapper.eq("role", "REPAIR");
+        wrapper.eq("is_deleted", 0);
+        
+        if (name != null && !name.isEmpty()) {
+            wrapper.like("real_name", name);
+        }
+        
+        if (username != null && !username.isEmpty()) {
+            wrapper.like("username", username);
+        }
+        
+        if (status != null) {
+            wrapper.eq("status", status);
+        }
+        
+        if (specialtyId != null) {
+            wrapper.like("specialty_ids", String.valueOf(specialtyId));
+        }
+        
+        wrapper.orderByDesc("create_time");
+        
+        List<User> users = userService.list(wrapper);
+        return users.stream()
                 .map(this::convertToUserVO)
                 .collect(Collectors.toList());
     }
     
     @PostMapping("/students")
     public UserVO createStudent(@RequestBody User user) {
-        user.setRole("STUDENT");
-        user.setPassword(passwordUtils.encode("123456"));
-        user.setStatus(1);
-        user.setCreateTime(LocalDateTime.now());
-        userService.save(user);
-        return convertToUserVO(user);
+        RegisterDTO dto = new RegisterDTO();
+        dto.setUsername(user.getUsername());
+        dto.setPassword("123456");
+        dto.setRealName(user.getRealName());
+        dto.setPhone(user.getPhone());
+        dto.setRole("STUDENT");
+        dto.setBuilding(user.getBuilding());
+        dto.setDormNumber(user.getDormNumber());
+        
+        User created = userService.register(dto);
+        return convertToUserVO(created);
     }
     
     @PostMapping("/repairmen")
     public UserVO createRepairman(@RequestBody User user) {
-        user.setRole("REPAIR");
-        user.setPassword(passwordUtils.encode("123456"));
-        user.setStatus(1);
-        user.setCreateTime(LocalDateTime.now());
-        userService.save(user);
-        return convertToUserVO(user);
+        RegisterDTO dto = new RegisterDTO();
+        dto.setUsername(null);  // 让register方法自动生成工号
+        dto.setPassword("123456");
+        dto.setRealName(user.getRealName());
+        dto.setPhone(user.getPhone());
+        dto.setRole("REPAIR");
+        dto.setBuilding(user.getBuilding());
+        dto.setDormNumber(user.getDormNumber());
+        
+        User created = userService.register(dto);
+        return convertToUserVO(created);
     }
     
     @PutMapping("/users/{id}")
@@ -132,7 +202,9 @@ public class AdminController {
             throw new RuntimeException("该用户有 " + count + " 个关联工单，无法删除。请先处理相关工单或禁用该用户。");
         }
         
-        userService.removeById(id);
+        // 假删除：设置is_deleted为1
+        user.setIsDeleted(1);
+        userMapper.updateById(user);
     }
     
     @GetMapping("/orders")
@@ -141,7 +213,27 @@ public class AdminController {
             @RequestParam(required = false) String building,
             @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate) {
-        List<RepairOrder> orders = repairOrderService.list();
+        QueryWrapper<RepairOrder> wrapper = new QueryWrapper<>();
+        
+        if (status != null && !status.isEmpty()) {
+            wrapper.eq("status", status);
+        }
+        
+        if (building != null && !building.isEmpty()) {
+            wrapper.eq("building", building);
+        }
+        
+        if (startDate != null && !startDate.isEmpty()) {
+            wrapper.ge("submit_time", startDate + " 00:00:00");
+        }
+        
+        if (endDate != null && !endDate.isEmpty()) {
+            wrapper.le("submit_time", endDate + " 23:59:59");
+        }
+        
+        wrapper.orderByDesc("submit_time");
+        
+        List<RepairOrder> orders = repairOrderService.list(wrapper);
         return convertToVOList(orders);
     }
     
@@ -158,12 +250,7 @@ public class AdminController {
     public void assignOrder(@PathVariable Long id, @RequestBody AssignOrderDTO dto) {
         repairOrderService.assignOrder(id, dto.getRepairmanId());
     }
-    
-    @PostMapping("/orders/{id}/confirm")
-    public void confirmOrder(@PathVariable Long id) {
-        repairOrderService.confirmOrder(id);
-    }
-    
+
     @GetMapping("/fault-types")
     public List<FaultType> getFaultTypes() {
         return faultTypeService.list();
@@ -203,7 +290,9 @@ public class AdminController {
             throw new RuntimeException("该故障类型有 " + count + " 个关联工单，无法删除。请先处理相关工单或禁用该类型。");
         }
         
-        faultTypeService.removeById(id);
+        // 假删除：设置is_deleted为1
+        faultType.setIsDeleted(1);
+        faultTypeService.updateById(faultType);
     }
     
     @GetMapping("/buildings")
@@ -231,7 +320,22 @@ public class AdminController {
     
     @DeleteMapping("/buildings/{id}")
     public void deleteBuilding(@PathVariable Long id) {
-        buildingService.removeById(id);
+        Building building = buildingService.getById(id);
+        if (building == null) {
+            throw new RuntimeException("楼栋不存在");
+        }
+        
+        // 检查是否有关联工单
+        QueryWrapper<RepairOrder> wrapper = new QueryWrapper<>();
+        wrapper.eq("building", building.getName());
+        long count = repairOrderService.count(wrapper);
+        if (count > 0) {
+            throw new RuntimeException("该楼栋有 " + count + " 个关联工单，无法删除。");
+        }
+        
+        // 假删除：设置is_deleted为1
+        building.setIsDeleted(1);
+        buildingService.updateById(building);
     }
     
     @GetMapping("/statistics")
@@ -323,12 +427,7 @@ public class AdminController {
                 .headers(httpHeaders)
                 .body(outputStream.toByteArray());
     }
-    
-    @PostMapping("/students/import")
-    public void importStudents() {
-        throw new RuntimeException("批量导入功能尚未实现");
-    }
-    
+
     private UserVO convertToUserVO(User user) {
         UserVO vo = new UserVO();
         vo.setId(user.getId());
@@ -374,10 +473,15 @@ public class AdminController {
         vo.setCompleteTime(order.getCompleteTime());
         vo.setRemark(order.getRemark());
         
-        if (order.getImages() != null) {
+        if (order.getImages() != null && !order.getImages().trim().isEmpty()) {
             vo.setImages(Arrays.asList(order.getImages().split(",")));
         }
-        
+
+        // 处理维修完成图片
+        if (order.getRepairImages() != null && !order.getRepairImages().trim().isEmpty()) {
+            vo.setRepairImages(Arrays.asList(order.getRepairImages().split(",")));
+        }
+
         FaultType faultType = faultTypeMapper.selectById(order.getFaultTypeId());
         vo.setFaultTypeName(faultType != null ? faultType.getName() : "未知");
         
@@ -401,5 +505,161 @@ public class AdminController {
         }
         
         return vo;
+    }
+
+    // 批量导入学生
+    @PostMapping("/students/import")
+    public BatchOperationResultDTO importStudents(@RequestParam("file") MultipartFile file) {
+        BatchOperationResultDTO result = new BatchOperationResultDTO();
+        
+        if (file == null || file.isEmpty()) {
+            result.addFail("请选择要上传的文件");
+            return result;
+        }
+        
+        try {
+            List<User> users = ExcelUtils.parseStudentExcel(file);
+            result.setTotalCount(users.size());
+            
+            for (User user : users) {
+                try {
+                    // 检查学号是否已存在
+                    QueryWrapper<User> wrapper = new QueryWrapper<>();
+                    wrapper.eq("username", user.getUsername());
+                    if (userService.count(wrapper) > 0) {
+                        result.addFail("学号 " + user.getUsername() + " 已存在");
+                        continue;
+                    }
+                    
+                    userService.save(user);
+                    result.addSuccess("学号 " + user.getUsername() + " 导入成功");
+                } catch (Exception e) {
+                    result.addFail("学号 " + user.getUsername() + " 导入失败: " + e.getMessage());
+                }
+            }
+        } catch (IOException e) {
+            result.addFail("文件解析失败: " + e.getMessage());
+        }
+        
+        return result;
+    }
+
+    // 批量导入修理工
+    @PostMapping("/repairmen/import")
+    public BatchOperationResultDTO importRepairmen(@RequestParam("file") MultipartFile file) {
+        BatchOperationResultDTO result = new BatchOperationResultDTO();
+        
+        if (file == null || file.isEmpty()) {
+            result.addFail("请选择要上传的文件");
+            return result;
+        }
+        
+        try {
+            List<User> users = ExcelUtils.parseRepairmanExcel(file);
+            result.setTotalCount(users.size());
+            
+            for (User user : users) {
+                try {
+                    // 检查工号是否已存在
+                    QueryWrapper<User> wrapper = new QueryWrapper<>();
+                    wrapper.eq("username", user.getUsername());
+                    if (userService.count(wrapper) > 0) {
+                        result.addFail("工号 " + user.getUsername() + " 已存在");
+                        continue;
+                    }
+                    
+                    userService.save(user);
+                    result.addSuccess("工号 " + user.getUsername() + " 导入成功");
+                } catch (Exception e) {
+                    result.addFail("工号 " + user.getUsername() + " 导入失败: " + e.getMessage());
+                }
+            }
+        } catch (IOException e) {
+            result.addFail("文件解析失败: " + e.getMessage());
+        }
+        
+        return result;
+    }
+
+    // 批量禁用学生
+    @PostMapping("/students/disable")
+    public BatchOperationResultDTO disableStudents(@RequestParam("file") MultipartFile file) {
+        BatchOperationResultDTO result = new BatchOperationResultDTO();
+        
+        if (file == null || file.isEmpty()) {
+            result.addFail("请选择要上传的文件");
+            return result;
+        }
+        
+        try {
+            List<String> usernames = ExcelUtils.parseUsernameExcel(file);
+            result.setTotalCount(usernames.size());
+            
+            for (String username : usernames) {
+                try {
+                    User user = userService.findByUsername(username);
+                    if (user == null) {
+                        result.addFail("学号 " + username + " 不存在");
+                        continue;
+                    }
+                    
+                    if (!"STUDENT".equals(user.getRole())) {
+                        result.addFail("学号 " + username + " 不是学生用户");
+                        continue;
+                    }
+                    
+                    user.setStatus(0);
+                    userService.updateById(user);
+                    result.addSuccess("学号 " + username + " 已禁用");
+                } catch (Exception e) {
+                    result.addFail("学号 " + username + " 禁用失败: " + e.getMessage());
+                }
+            }
+        } catch (IOException e) {
+            result.addFail("文件解析失败: " + e.getMessage());
+        }
+        
+        return result;
+    }
+
+    // 批量启用学生
+    @PostMapping("/students/enable")
+    public BatchOperationResultDTO enableStudents(@RequestParam("file") MultipartFile file) {
+        BatchOperationResultDTO result = new BatchOperationResultDTO();
+        
+        if (file == null || file.isEmpty()) {
+            result.addFail("请选择要上传的文件");
+            return result;
+        }
+        
+        try {
+            List<String> usernames = ExcelUtils.parseUsernameExcel(file);
+            result.setTotalCount(usernames.size());
+            
+            for (String username : usernames) {
+                try {
+                    User user = userService.findByUsername(username);
+                    if (user == null) {
+                        result.addFail("学号 " + username + " 不存在");
+                        continue;
+                    }
+                    
+                    if (!"STUDENT".equals(user.getRole())) {
+                        result.addFail("学号 " + username + " 不是学生用户");
+                        continue;
+                    }
+                    
+                    user.setStatus(1);
+                    userService.updateById(user);
+                    result.addSuccess("学号 " + username + " 已启用");
+                } catch (Exception e) {
+                    result.addFail("学号 " + username + " 启用失败: " + e.getMessage());
+                }
+            }
+        } catch (IOException e) {
+            result.addFail("文件解析失败: " + e.getMessage());
+        }
+        
+        return result;
     }
 }

@@ -44,13 +44,26 @@
         </div>
 
         <div class="info-row" v-if="order.images && order.images.length > 0">
-          <span class="label">图片：</span>
+          <span class="label">报修图片：</span>
           <div class="images-container">
             <el-image
                 v-for="(img, index) in order.images"
                 :key="index"
                 :src="img"
                 :preview-src-list="order.images"
+                class="preview-image"
+            />
+          </div>
+        </div>
+
+        <div class="info-row" v-if="order.repairImages && order.repairImages.length > 0">
+          <span class="label">维修完成图片：</span>
+          <div class="images-container">
+            <el-image
+                v-for="(img, index) in order.repairImages"
+                :key="index"
+                :src="img"
+                :preview-src-list="order.repairImages"
                 class="preview-image"
             />
           </div>

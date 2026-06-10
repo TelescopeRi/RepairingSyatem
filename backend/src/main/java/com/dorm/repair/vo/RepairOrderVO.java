@@ -17,6 +17,8 @@ public class RepairOrderVO {
 
     private List<String> images;
 
+    private List<String> repairImages;
+
     private String urgency;
 
     private String status;
@@ -85,6 +87,14 @@ public class RepairOrderVO {
 
     public void setImages(List<String> images) {
         this.images = images;
+    }
+
+    public List<String> getRepairImages() {
+        return repairImages;
+    }
+
+    public void setRepairImages(List<String> repairImages) {
+        this.repairImages = repairImages;
     }
 
     public String getUrgency() {

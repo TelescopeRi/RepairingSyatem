@@ -34,7 +34,7 @@ public class SkillMatchingServiceImpl implements SkillMatchingService {
     public List<RepairmanRecommendVO> getRecommendations(Long orderId) {
         RepairOrder order = repairOrderService.getById(orderId);
         if (order == null) {
-            return Collections.emptyList();
+            throw new RuntimeException("工单不存在");
         }
         
         List<User> repairmen = userService.findByRole("REPAIR");

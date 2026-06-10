@@ -16,13 +16,11 @@ import java.util.List;
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
     
-    @Resource
-    private PasswordUtils passwordUtils;
-    
     @Override
     public User findByUsername(String username) {
         QueryWrapper<User> wrapper = new QueryWrapper<>();
         wrapper.eq("username", username);
+        wrapper.eq("is_deleted", 0);
         return baseMapper.selectOne(wrapper);
     }
     
@@ -34,20 +32,50 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             username = generateRepairmanCode();
         }
         
-        User existing = findByUsername(username);
-        if (existing != null) {
+        // 先检查该用户名是否存在（无论是否删除）
+        int count = baseMapper.countByUsername(username);
+        if (count > 0) {
+            // 用户名存在，尝试恢复（不管is_deleted值是什么）
+            int updated = baseMapper.restoreUserByUsername(
+                username,
+                PasswordUtils.encode(dto.getPassword()),
+                dto.getRealName(),
+                dto.getPhone(),
+                dto.getRole() != null ? dto.getRole() : "STUDENT",
+                dto.getBuilding(),
+                dto.getDormNumber()
+            );
+            
+            if (updated > 0) {
+                // 恢复成功，更新 specialtyIds（如果是修理工）
+                if ("REPAIR".equals(dto.getRole()) && dto.getSpecialtyIds() != null) {
+                    User restoredUser = findByUsername(username);
+                    restoredUser.setSpecialtyIds(dto.getSpecialtyIds());
+                    baseMapper.updateById(restoredUser);
+                    return restoredUser;
+                }
+                // 查询并返回用户
+                return findByUsername(username);
+            }
+            
+            // 恢复失败，说明用户已存在且未删除
             throw new RuntimeException("用户名已存在");
         }
         
+        // 用户名不存在，执行新增
         User user = new User();
         user.setUsername(username);
-        user.setPassword(passwordUtils.encode(dto.getPassword()));
+        user.setPassword(PasswordUtils.encode(dto.getPassword()));
         user.setRealName(dto.getRealName());
         user.setPhone(dto.getPhone());
         user.setRole(dto.getRole() != null ? dto.getRole() : "STUDENT");
         user.setStatus(1);
         user.setBuilding(dto.getBuilding());
         user.setDormNumber(dto.getDormNumber());
+        // 修理工设置擅长类型
+        if ("REPAIR".equals(dto.getRole()) && dto.getSpecialtyIds() != null) {
+            user.setSpecialtyIds(dto.getSpecialtyIds());
+        }
         user.setCreateTime(LocalDateTime.now());
         
         baseMapper.insert(user);
@@ -55,36 +83,36 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
     
     /**
-     * 生成修理工工号，格式：WX + 年月日 + 4位序号
-     * 例如：WX202401010001
+     * 生成修理工工号，格式：4位数字，从0001开始递增
+     * 例如：0001, 0002, 0003...
      */
     private String generateRepairmanCode() {
-        String prefix = "WX";
-        String dateStr = LocalDateTime.now().format(
-            java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd")
-        );
-        
-        // 查询当天最大序号
+        // 查询所有修理工工号（4位纯数字格式）
         QueryWrapper<User> wrapper = new QueryWrapper<>();
-        wrapper.likeRight("username", prefix + dateStr);
         wrapper.eq("role", "REPAIR");
-        wrapper.orderByDesc("username");
-        wrapper.last("LIMIT 1");
+        wrapper.eq("is_deleted", 0);
         
-        User lastUser = baseMapper.selectOne(wrapper);
+        List<User> repairmen = baseMapper.selectList(wrapper);
         
-        int sequence = 1;
-        if (lastUser != null) {
-            String lastCode = lastUser.getUsername();
-            try {
-                String seqStr = lastCode.substring(prefix.length() + dateStr.length());
-                sequence = Integer.parseInt(seqStr) + 1;
-            } catch (Exception e) {
-                sequence = 1;
+        int maxSequence = 0;
+        for (User user : repairmen) {
+            String username = user.getUsername();
+            // 检查是否为4位纯数字格式
+            if (username != null && username.matches("\\d{4}")) {
+                try {
+                    int sequence = Integer.parseInt(username);
+                    if (sequence > maxSequence) {
+                        maxSequence = sequence;
+                    }
+                } catch (NumberFormatException e) {
+                    // 忽略无法解析的工号
+                }
             }
         }
         
-        return prefix + dateStr + String.format("%04d", sequence);
+        // 生成下一个工号
+        int nextSequence = maxSequence + 1;
+        return String.format("%04d", nextSequence);
     }
     
     @Override
@@ -98,7 +126,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             throw new RuntimeException("用户已被禁用");
         }
         
-        if (!passwordUtils.matches(password, user.getPassword())) {
+        if (!PasswordUtils.matches(password, user.getPassword())) {
             throw new RuntimeException("密码错误");
         }
         
@@ -109,6 +137,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public List<User> findByRole(String role) {
         QueryWrapper<User> wrapper = new QueryWrapper<>();
         wrapper.eq("role", role);
+        wrapper.eq("is_deleted", 0);
         return baseMapper.selectList(wrapper);
     }
     
@@ -119,7 +148,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             throw new RuntimeException("用户不存在");
         }
         
-        user.setPassword(passwordUtils.encode(newPassword));
+        user.setPassword(PasswordUtils.encode(newPassword));
         updateById(user);
     }
     
@@ -131,6 +160,21 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         
         user.setStatus(status);
+        updateById(user);
+    }
+    
+    @Override
+    public void changePassword(Long userId, String oldPassword, String newPassword) {
+        User user = getById(userId);
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
+        
+        if (!PasswordUtils.matches(oldPassword, user.getPassword())) {
+            throw new RuntimeException("旧密码错误");
+        }
+        
+        user.setPassword(PasswordUtils.encode(newPassword));
         updateById(user);
     }
 }

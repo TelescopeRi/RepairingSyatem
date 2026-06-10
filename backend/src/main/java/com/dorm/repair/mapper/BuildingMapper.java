@@ -10,6 +10,6 @@ import java.util.List;
 @Mapper
 public interface BuildingMapper extends BaseMapper<Building> {
     
-    @Select("SELECT * FROM building WHERE status = 1 ORDER BY name")
+    @Select("SELECT * FROM building WHERE status = 1 AND is_deleted = 0 ORDER BY name")
     List<Building> selectAllEnabled();
 }

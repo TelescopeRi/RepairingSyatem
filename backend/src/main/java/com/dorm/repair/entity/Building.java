@@ -17,6 +17,9 @@ public class Building {
     @TableField("status")
     private Integer status;
 
+    @TableField("is_deleted")
+    private Integer isDeleted;
+
     public Long getId() {
         return id;
     }
@@ -39,5 +42,13 @@ public class Building {
 
     public void setStatus(Integer status) {
         this.status = status;
+    }
+
+    public Integer getIsDeleted() {
+        return isDeleted;
+    }
+
+    public void setIsDeleted(Integer isDeleted) {
+        this.isDeleted = isDeleted;
     }
 }

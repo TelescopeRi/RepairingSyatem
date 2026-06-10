@@ -75,6 +75,26 @@
             show-word-limit
         />
       </el-form-item>
+      
+      <el-form-item label="维修后照片">
+        <div class="upload-area">
+          <el-upload
+              :action="uploadUrl"
+              :file-list="completeImages"
+              :limit="5"
+              :on-success="handleCompleteUploadSuccess"
+              :on-remove="handleCompleteUploadRemove"
+              :before-upload="beforeUpload"
+              list-type="picture-card"
+          >
+            <el-icon :size="30">
+              <Plus />
+            </el-icon>
+          </el-upload>
+        </div>
+        <div class="upload-tip">可上传最多5张图片，支持jpg/png格式，单张不超过5MB</div>
+      </el-form-item>
+      
       <el-form-item label="维修耗时" v-if="orderDuration">
         <span class="duration-info">本次维修耗时：{{ orderDuration }}</span>
       </el-form-item>
@@ -83,7 +103,7 @@
     <template #footer>
       <el-button @click="showCompleteModal = false">取消</el-button>
       <el-button type="primary" @click="completeRepair" :loading="completing">
-        确认完成
+        完成维修
       </el-button>
     </template>
   </el-dialog>
@@ -94,7 +114,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from '../../utils/axios'
 import { ElMessage } from 'element-plus'
-import { Document } from '@element-plus/icons-vue'
+import { Document, Plus } from '@element-plus/icons-vue'
 
 const router = useRouter()
 
@@ -109,6 +129,13 @@ const currentOrderStartTime = ref(null)
 const completeForm = ref({
   remark: ''
 })
+
+// 维修完成图片上传
+const completeImages = ref([])
+const completeFormImages = ref([])
+
+// 上传配置
+const uploadUrl = `/api/repair/upload?token=${localStorage.getItem('token') || ''}`
 
 // 计算维修耗时
 const orderDuration = computed(() => {
@@ -141,11 +168,58 @@ const startRepair = async (id) => {
   }
 }
 
+// 上传前验证
+const beforeUpload = (file) => {
+  const isImage = file.type === 'image/jpeg' || file.type === 'image/png'
+  if (!isImage) {
+    ElMessage.error('只能上传 jpg/png 格式的图片')
+    return false
+  }
+  const isLt5M = file.size / 1024 / 1024 < 5
+  if (!isLt5M) {
+    ElMessage.error('图片大小不能超过5MB')
+    return false
+  }
+  return true
+}
+
+// 完成工单上传成功回调
+const handleCompleteUploadSuccess = (response, file) => {
+  console.log('上传响应:', response)
+  // 兼容两种响应格式：{ url: 'xxx' } 和 { code: 200, data: { url: 'xxx' } }
+  let url = null
+  if (response.code === 200 && response.data && response.data.url) {
+    url = response.data.url
+  } else if (response.url) {
+    url = response.url
+  }
+  
+  if (url) {
+    completeFormImages.value.push(url)
+    ElMessage.success('上传成功')
+  } else {
+    ElMessage.error(response?.message || '上传失败')
+  }
+}
+
+// 移除完成工单图片
+const handleCompleteUploadRemove = (file) => {
+  const url = file.response?.data?.url
+  if (url) {
+    const index = completeFormImages.value.indexOf(url)
+    if (index > -1) {
+      completeFormImages.value.splice(index, 1)
+    }
+  }
+}
+
 // 显示完成对话框
 const showCompleteDialog = (order) => {
   currentOrderId.value = order.id
   currentOrderStartTime.value = order.startTime
   completeForm.value.remark = ''
+  completeImages.value = []
+  completeFormImages.value = []
   showCompleteModal.value = true
 }
 
@@ -159,12 +233,15 @@ const completeRepair = async () => {
   completing.value = true
   try {
     await axios.post(`/api/repair/orders/${currentOrderId.value}/complete`, {
-      remark: completeForm.value.remark
+      remark: completeForm.value.remark,
+      images: completeFormImages.value
     })
 
     ElMessage.success('工单已完成')
     showCompleteModal.value = false
     completeForm.value.remark = ''
+    completeImages.value = []
+    completeFormImages.value = []
     currentOrderId.value = null
     currentOrderStartTime.value = null
     loadOrders()
@@ -205,15 +282,22 @@ const startAutoRefresh = () => {
   }, 30000) // 30秒刷新一次
 }
 
+// 处理工单更新事件
+const handleOrderUpdated = (event) => {
+  console.log('修理工端收到工单更新事件:', event.detail)
+  loadOrders()
+}
+
 onMounted(() => {
   loadOrders()
-  startAutoRefresh()
+  
+  // 监听WebSocket推送的工单更新事件
+  window.addEventListener('repairmanOrderUpdated', handleOrderUpdated)
 })
 
 onUnmounted(() => {
-  if (refreshTimer) {
-    clearInterval(refreshTimer)
-  }
+  // 清理事件监听
+  window.removeEventListener('repairmanOrderUpdated', handleOrderUpdated)
 })
 </script>
 

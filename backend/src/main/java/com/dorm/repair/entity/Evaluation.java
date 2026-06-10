@@ -28,6 +28,9 @@ public class Evaluation {
     @TableField("create_time")
     private LocalDateTime createTime;
 
+    @TableField("is_deleted")
+    private Integer isDeleted;
+
     public Long getId() {
         return id;
     }
@@ -74,5 +77,13 @@ public class Evaluation {
 
     public void setCreateTime(LocalDateTime createTime) {
         this.createTime = createTime;
+    }
+
+    public Integer getIsDeleted() {
+        return isDeleted;
+    }
+
+    public void setIsDeleted(Integer isDeleted) {
+        this.isDeleted = isDeleted;
     }
 }

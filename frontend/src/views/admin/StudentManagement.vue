@@ -3,6 +3,46 @@
     <el-card>
       <div class="filter-bar">
         <el-button type="primary" @click="showAddDialog">添加学生</el-button>
+        
+        <div class="filters">
+          <el-input
+            v-model="filters.name"
+            placeholder="按姓名搜索"
+            class="filter-input"
+            @input="debounceLoadStudents"
+          />
+          <el-input
+            v-model="filters.username"
+            placeholder="按学号搜索"
+            class="filter-input"
+            @input="debounceLoadStudents"
+          />
+          <el-select
+            v-model="filters.building"
+            placeholder="楼栋筛选"
+            class="filter-input"
+            @change="loadStudents"
+          >
+            <el-option label="全部" :value="''" />
+            <el-option
+              v-for="building in buildings"
+              :key="building.id"
+              :label="building.name"
+              :value="building.name"
+            />
+          </el-select>
+          <el-select
+            v-model="filters.status"
+            placeholder="状态筛选"
+            class="filter-input"
+            @change="loadStudents"
+          >
+            <el-option label="全部" :value="''" />
+            <el-option label="正常" :value="1" />
+            <el-option label="禁用" :value="0" />
+          </el-select>
+          <el-button @click="resetFilters">重置</el-button>
+        </div>
       </div>
 
       <el-table :data="students" border stripe>
@@ -137,6 +177,13 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 
 const students = ref([])
 const buildings = ref([])
+
+const filters = ref({
+  name: '',
+  username: '',
+  building: '',
+  status: ''
+})
 
 const showAddModal = ref(false)
 const showEditModal = ref(false)
@@ -302,12 +349,41 @@ const deleteStudent = async (id) => {
 // 加载学生列表
 const loadStudents = async () => {
   try {
-    const response = await axios.get('/api/admin/students')
+    const params = {}
+    if (filters.value.name) params.name = filters.value.name
+    if (filters.value.username) params.username = filters.value.username
+    if (filters.value.building) params.building = filters.value.building
+    if (filters.value.status !== '') params.status = filters.value.status
+    
+    const response = await axios.get('/api/admin/students', { params })
     students.value = response.data
   } catch (error) {
     console.error('加载学生失败', error)
     ElMessage.error('加载学生失败')
   }
+}
+
+// 防抖函数
+const debounce = (fn, delay) => {
+  let timer = null
+  return function (...args) {
+    if (timer) clearTimeout(timer)
+    timer = setTimeout(() => fn(...args), delay)
+  }
+}
+
+// 防抖加载学生列表
+const debounceLoadStudents = debounce(loadStudents, 300)
+
+// 重置筛选条件
+const resetFilters = () => {
+  filters.value = {
+    name: '',
+    username: '',
+    building: '',
+    status: ''
+  }
+  loadStudents()
 }
 
 // 加载楼栋列表（去重）
@@ -336,5 +412,18 @@ onMounted(() => {
 
 .filter-bar {
   margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.filters {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.filter-input {
+  width: 180px;
 }
 </style>

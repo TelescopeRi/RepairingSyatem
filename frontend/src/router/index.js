@@ -46,7 +46,8 @@ const routes = [
       { path: 'statistics', name: 'AdminStatistics2', component: () => import('../views/admin/Statistics.vue') },
       { path: 'fault-types', name: 'AdminFaultTypes', component: () => import('../views/admin/FaultTypeManagement.vue') },
       { path: 'buildings', name: 'AdminBuildings', component: () => import('../views/admin/BuildingManagement.vue') },
-      { path: 'order-detail/:id', name: 'AdminOrderDetail', component: () => import('../views/admin/OrderDetail.vue') }
+      { path: 'order-detail/:id', name: 'AdminOrderDetail', component: () => import('../views/admin/OrderDetail.vue') },
+      { path: 'agent', name: 'AdminAgent', component: () => import('../views/admin/AgentChat.vue') }
     ]
   }
 ]
@@ -57,39 +58,41 @@ const router = createRouter({
 })
 
 router.beforeEach((to, from, next) => {
-  const userStore = useUserStore()
+  // 使用 sessionStorage 实现标签页隔离
+  const token = sessionStorage.getItem('token')
+  const userStr = sessionStorage.getItem('user')
+  const user = userStr ? JSON.parse(userStr) : null
   
   if (to.path === '/login') {
     next()
     return
   }
   
-  if (!userStore.token) {
+  // 检查是否有 token
+  if (!token) {
     next('/login')
     return
   }
   
-  const role = userStore.user?.role
+  // 检查用户角色
+  const role = user?.role
   const path = to.path
   
+  // 学生端路径只能学生访问
   if (path.startsWith('/student') && role !== 'STUDENT') {
     next('/login')
     return
   }
   
+  // 修理工端路径只能修理工访问
   if (path.startsWith('/repairman') && role !== 'REPAIR') {
     next('/login')
     return
   }
   
+  // 管理员端路径只能管理员访问
   if (path.startsWith('/admin') && role !== 'ADMIN') {
     next('/login')
-    return
-  }
-  
-  // 管理员访问根路径时跳转到统计页面
-  if (path === '/admin' || path === '/') {
-    next('/admin/statistics')
     return
   }
   

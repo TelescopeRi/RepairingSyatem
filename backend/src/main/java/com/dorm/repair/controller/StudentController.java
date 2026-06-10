@@ -16,6 +16,7 @@ import com.dorm.repair.utils.FileUploadUtils;
 import com.dorm.repair.vo.EvaluationVO;
 import com.dorm.repair.vo.RepairOrderVO;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import java.util.HashMap;
@@ -32,6 +33,14 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/student")
 public class StudentController {
     
+    private Long getUserId(Authentication auth) {
+        Object principal = auth.getPrincipal();
+        if (principal instanceof UserDetails) {
+            return Long.parseLong(((UserDetails) principal).getUsername());
+        }
+        return Long.parseLong(principal.toString());
+    }
+    
     @Resource
     private RepairOrderService repairOrderService;
     
@@ -40,6 +49,9 @@ public class StudentController {
     
     @Resource
     private UserMapper userMapper;
+    
+    @Resource
+    private UserService userService;
     
     @Resource
     private FaultTypeMapper faultTypeMapper;
@@ -52,7 +64,7 @@ public class StudentController {
     
     @GetMapping("/orders")
     public List<RepairOrderVO> getMyOrders(Authentication auth, @RequestParam(required = false) String status) {
-        Long userId = Long.parseLong(auth.getPrincipal().toString());
+        Long userId = getUserId(auth);
         
         List<RepairOrder> orders;
         if (status != null && !status.isEmpty()) {
@@ -68,7 +80,7 @@ public class StudentController {
     
     @GetMapping("/orders/{id}")
     public RepairOrderVO getOrderDetail(Authentication auth, @PathVariable Long id) {
-        Long userId = Long.parseLong(auth.getPrincipal().toString());
+        Long userId = getUserId(auth);
         RepairOrder order = repairOrderService.getById(id);
         
         if (order == null || !order.getStudentId().equals(userId)) {
@@ -80,7 +92,7 @@ public class StudentController {
     
     @PostMapping("/orders")
     public RepairOrderVO createOrder(Authentication auth, @RequestBody RepairOrderDTO dto) {
-        Long userId = Long.parseLong(auth.getPrincipal().toString());
+        Long userId = getUserId(auth);
         RepairOrder order = repairOrderService.createOrder(userId, dto);
         return convertToVO(order);
     }
@@ -88,7 +100,7 @@ public class StudentController {
     @PostMapping("/orders/{id}/cancel")
     public void cancelOrder(Authentication auth, @PathVariable Long id, @RequestBody Map<String, String> requestBody) {
         String reason = requestBody.get("reason");
-        Long userId = Long.parseLong(auth.getPrincipal().toString());
+        Long userId = getUserId(auth);
         RepairOrder order = repairOrderService.getById(id);
         
         if (order == null || !order.getStudentId().equals(userId)) {
@@ -100,7 +112,7 @@ public class StudentController {
     
     @PostMapping("/orders/{id}/evaluate")
     public EvaluationVO evaluateOrder(Authentication auth, @PathVariable Long id, @RequestBody EvaluationDTO dto) {
-        Long userId = Long.parseLong(auth.getPrincipal().toString());
+        Long userId = getUserId(auth);
         dto.setOrderId(id);
         Evaluation evaluation = evaluationService.createEvaluation(userId, dto);
         
@@ -144,6 +156,15 @@ public class StudentController {
         return buildingMapper.selectAllEnabled();
     }
     
+    @PutMapping("/password")
+    public void changePassword(Authentication auth, @RequestBody Map<String, String> requestBody) {
+        Long userId = getUserId(auth);
+        String oldPassword = requestBody.get("oldPassword");
+        String newPassword = requestBody.get("newPassword");
+        
+        userService.changePassword(userId, oldPassword, newPassword);
+    }
+    
     private List<RepairOrderVO> convertToVOList(List<RepairOrder> orders) {
         return orders.stream().map(this::convertToVO).collect(Collectors.toList());
     }
@@ -163,10 +184,15 @@ public class StudentController {
         vo.setCompleteTime(order.getCompleteTime());
         vo.setRemark(order.getRemark());
         
-        if (order.getImages() != null) {
+        if (order.getImages() != null && !order.getImages().trim().isEmpty()) {
             vo.setImages(Arrays.asList(order.getImages().split(",")));
         }
-        
+
+        // 处理维修完成图片
+        if (order.getRepairImages() != null && !order.getRepairImages().trim().isEmpty()) {
+            vo.setRepairImages(Arrays.asList(order.getRepairImages().split(",")));
+        }
+
         FaultType faultType = faultTypeMapper.selectById(order.getFaultTypeId());
         vo.setFaultTypeName(faultType != null ? faultType.getName() : "未知");
         
